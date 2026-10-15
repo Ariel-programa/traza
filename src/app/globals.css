@@ -1,0 +1,603 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   TRAZA — Design System
+   Centro de control operativo. Dark mode profesional (no negro puro),
+   colores semánticos (nunca decorativos), glassmorphism controlado
+   (header, command palette, overlays) y una escala de spacing/radius/shadow
+   consistente. Todo componente del panel consume estas variables -- nunca
+   colores sueltos -- así que cambiar la paleta acá reestiliza toda la app.
+   ========================================================================== */
+:root {
+  /* Superficies -- de más oscura (page) a más clara (elevada/hover) */
+  --background: #07111f;
+  --foreground: #eef3fb;
+  --surface-muted: #0b1626;
+  --surface: #101d30;
+  --surface-2: #17263c;
+  --surface-hover: #1c2d47;
+  --border: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.16);
+
+  --text-primary: #eef3fb;
+  --text-secondary: #a6b6cc;
+  --text-muted: #6c7c93;
+
+  /* Primario: azul tecnológico -- acciones, foco, marca */
+  --brand: #3b7bf6;
+  --brand-hover: #5b90f8;
+  --brand-soft: rgba(59, 123, 246, 0.16);
+  --brand-foreground: #ffffff;
+
+  /* Acento: teal -- el trazo de TRAZA, uso secundario/informativo. Tono
+     "empresarial" (teal-500), no cyan brillante -- evita que se lea como
+     verde flúor y se distingue con claridad de --success (verde cálido). */
+  --accent: #14b8a6;
+  --accent-hover: #2dd4bf;
+  --accent-soft: rgba(20, 184, 166, 0.16);
+
+  /* Semánticos -- SIEMPRE con el mismo significado, nunca decorativos */
+  --success: #22c55e;
+  --success-soft: rgba(34, 197, 94, 0.15);
+  --warning: #f59e0b;
+  --warning-soft: rgba(245, 158, 11, 0.16);
+  --caution: #eab308;
+  --caution-soft: rgba(234, 179, 8, 0.15);
+  --danger: #f04444;
+  --danger-soft: rgba(240, 68, 68, 0.16);
+  --info: #38bdf8;
+  --info-soft: rgba(56, 189, 248, 0.15);
+  --neutral-soft: rgba(255, 255, 255, 0.06);
+
+  /* Spacing (referencia -- se usa vía clases Tailwind p-1/p-2/p-3.../gap-*,
+     que ya mapean a este mismo ritmo de 4px). Documentado para el design
+     system, no para reemplazar Tailwind. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+
+  /* Shadows en dark mode: casi invisibles como sombra de color; lo que da
+     profundidad es el contraste de superficie + un halo sutil. */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.35);
+  --shadow-md: 0 8px 24px -6px rgb(0 0 0 / 0.5), 0 2px 8px -2px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 24px 56px -16px rgb(0 0 0 / 0.6);
+
+  /* Glassmorphism controlado -- solo header, command palette, overlays y
+     alguna tarjeta destacada (nunca en tablas, formularios ni texto largo:
+     la legibilidad gana siempre). */
+  --glass-bg: rgba(16, 29, 48, 0.66);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-blur: 18px;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  border-color: var(--border);
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--text-primary);
+}
+
+/* Tipografía -- escala documentada del design system (H1/H2/H3/body ya
+   se aplican directamente vía clases Tailwind en cada componente; estas
+   utilidades cubren los casos donde vale la pena nombrarlas). */
+/* Los números protagonistas del Dashboard (KPIs, Centro de Atención) usan
+   siempre esta misma escala -- el usuario debe poder escanearlos en
+   segundos, así que el tamaño es deliberadamente grande y consistente en
+   todos lados donde aparece un número principal. */
+.text-kpi {
+  font-size: 40px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .text-kpi {
+    font-size: 32px;
+  }
+}
+
+/* Glass -- transparencia sutil + blur + borde fino. Ver comentario arriba:
+   uso deliberadamente acotado. */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(150%);
+  border: 1px solid var(--glass-border);
+}
+
+/* Microinteracciones: aparición suave para secciones que cargan con datos
+   reales (no decorativo -- ayuda a que el usuario note qué cambió al
+   navegar). Respeta prefers-reduced-motion. */
+@keyframes traza-fade-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  animation: traza-fade-up 0.35s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-in { animation: none; }
+}
+
+/* ==========================================================================
+   LANDING -- "Controlar el movimiento"
+   Lenguaje visual de instrumento: líneas finas (hairlines), etiquetas en
+   mono, coordenadas, radios chicos y casi sin sombras. El teal (--accent) es
+   la "traza": solo marca recorridos y estados alcanzados. El azul (--brand)
+   queda para lo accionable. Colores semánticos, nunca decorativos.
+   Toda animación compleja vive en GSAP (components/motion/*); acá solo hay
+   estados base, microinteracciones y la entrada del Hero (CSS, sin esperar
+   a la hidratación).
+   ========================================================================== */
+.landing {
+  --l-bg: #060e1a;
+  --l-panel: #0b1626;
+  --l-panel-2: #0f1d31;
+  --l-line: rgba(255, 255, 255, 0.07);
+  --l-line-strong: rgba(255, 255, 255, 0.14);
+  --l-radius: 6px;
+  --l-radius-lg: 10px;
+  --l-gutter: clamp(1.25rem, 0.8rem + 2vw, 2.5rem);
+  --l-max: 1320px;
+  background: var(--l-bg);
+  color: var(--text-primary);
+}
+
+/* Escala tipográfica fluida */
+.t-display {
+  font-size: clamp(2.6rem, 1.55rem + 3.9vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  font-weight: 600;
+  text-wrap: balance;
+}
+.t-h2 {
+  font-size: clamp(2rem, 1.35rem + 2.3vw, 3.4rem);
+  line-height: 1.04;
+  letter-spacing: -0.032em;
+  font-weight: 600;
+  text-wrap: balance;
+}
+.t-h3 {
+  font-size: clamp(1.15rem, 1.05rem + 0.45vw, 1.4rem);
+  line-height: 1.25;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+.t-lead {
+  font-size: clamp(1.05rem, 0.98rem + 0.32vw, 1.25rem);
+  line-height: 1.6;
+  color: var(--text-secondary);
+  text-wrap: pretty;
+}
+.t-body {
+  font-size: 0.975rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
+.t-mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-feature-settings: "zero" 1;
+}
+.t-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.l-container {
+  width: 100%;
+  max-width: var(--l-max);
+  margin-inline: auto;
+  padding-inline: var(--l-gutter);
+}
+.l-section {
+  position: relative;
+  padding-block: clamp(5rem, 3.5rem + 7vw, 10rem);
+}
+.l-panel {
+  background: var(--l-panel);
+  border: 1px solid var(--l-line);
+  border-radius: var(--l-radius-lg);
+}
+.l-hairline {
+  height: 1px;
+  background: var(--l-line);
+}
+
+/* Regla con marcas de escala entre secciones -- el "instrumento" */
+.l-ruler {
+  height: 12px;
+  border-top: 1px solid var(--l-line);
+  background-image: linear-gradient(to right, var(--l-line-strong) 1px, transparent 1px);
+  background-size: 48px 6px;
+  background-repeat: repeat-x;
+  background-position: 0 0;
+}
+
+/* Botones de la landing: rectos, sin gradientes; el azul es la acción */
+.l-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  height: 48px;
+  padding-inline: 1.25rem;
+  border-radius: var(--l-radius);
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.l-btn:focus-visible {
+  outline: 2px solid var(--brand-hover);
+  outline-offset: 3px;
+}
+.l-btn-primary {
+  background: var(--brand);
+  color: #fff;
+}
+.l-btn-primary:hover {
+  background: var(--brand-hover);
+}
+.l-btn-ghost {
+  border: 1px solid var(--l-line-strong);
+  color: var(--text-primary);
+}
+.l-btn-ghost:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.03);
+}
+.l-btn .l-btn-arrow {
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.l-btn:hover .l-btn-arrow {
+  transform: translateX(3px);
+}
+
+/* Foco visible en todo control de la landing */
+.landing a:focus-visible,
+.landing button:focus-visible {
+  outline: 2px solid var(--brand-hover);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Patente formato Mercosur (Argentina) */
+.plate {
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 74px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: #f4f6f8;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25);
+  text-align: center;
+}
+.plate::before {
+  content: "ARGENTINA";
+  display: block;
+  background: #1f3f94;
+  color: #fff;
+  font-size: 6px;
+  letter-spacing: 0.2em;
+  line-height: 8px;
+  font-weight: 600;
+}
+.plate > span {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #0b1220;
+  line-height: 18px;
+}
+
+/* Pastilla de estado (semántica) */
+.l-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.l-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+.l-status[data-tone="success"] { color: var(--success); }
+.l-status[data-tone="info"] { color: var(--info); }
+.l-status[data-tone="warning"] { color: var(--warning); }
+.l-status[data-tone="danger"] { color: var(--danger); }
+.l-status[data-tone="muted"] { color: var(--text-muted); }
+
+/* ---------- Hero ---------- */
+.hero-grid-bg {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.028) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse 80% 70% at 70% 45%, #000 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 70% 45%, #000 20%, transparent 75%);
+}
+
+/* Entrada del Hero en CSS puro: arranca en el primer paint, sin flash de
+   hidratación y sin depender del JS. */
+@keyframes l-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes l-word {
+  from { transform: translateY(105%); }
+  to { transform: none; }
+}
+@keyframes l-draw {
+  to { stroke-dashoffset: 0; }
+}
+@keyframes l-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.hero-in {
+  /* backwards (no both): al terminar no retiene estilos, así GSAP puede
+     animar opacidad/transform de estos mismos elementos con el scroll */
+  animation: l-rise 0.9s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: var(--d, 0s);
+}
+.hero-word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.hero-word {
+  display: inline-block;
+  animation: l-word 1s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: var(--d, 0s);
+}
+.route-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: l-draw 1.8s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+  animation-delay: var(--d, 0.3s);
+}
+.hero-fade {
+  animation: l-fade 0.8s ease backwards;
+  animation-delay: var(--d, 0s);
+}
+
+.hero-node-label {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  fill: var(--text-muted);
+}
+.hero-tag {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: rgba(11, 22, 38, 0.92);
+  border: 1px solid var(--l-line-strong);
+  border-radius: var(--l-radius);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--text-secondary);
+}
+.hero-tag b {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Pulso de un nodo activo */
+@keyframes l-pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(3); opacity: 0; }
+}
+.l-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: l-pulse 2.2s ease-out infinite;
+}
+
+/* ---------- Plataforma (grafo de entidades) ---------- */
+.entity-btn {
+  position: relative;
+  text-align: left;
+  border: 1px solid var(--l-line);
+  border-radius: var(--l-radius);
+  background: var(--l-panel);
+  transition: border-color 0.25s ease, background-color 0.25s ease, opacity 0.25s ease;
+}
+.entity-btn:hover {
+  border-color: var(--l-line-strong);
+}
+.entity-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--l-panel-2);
+}
+.entity-btn[data-related="true"] {
+  border-color: rgba(20, 184, 166, 0.4);
+}
+.entity-graph[data-has-selection] .entity-btn:not([aria-pressed="true"]):not([data-related="true"]) {
+  opacity: 0.45;
+}
+.entity-stem {
+  transition: background-color 0.25s ease;
+}
+.entity-btn[aria-pressed="true"] .entity-stem,
+.entity-btn[data-related="true"] .entity-stem {
+  background: var(--accent);
+}
+
+/* ---------- Flota ---------- */
+.fleet-row {
+  transition: opacity 0.3s ease;
+}
+.fleet-row[data-dim="true"] {
+  opacity: 0.22;
+}
+.l-tab {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.l-tab:hover {
+  color: var(--text-primary);
+}
+.l-tab[aria-pressed="true"],
+.l-tab[aria-selected="true"] {
+  color: var(--text-primary);
+  border-color: var(--l-line-strong);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* ---------- Gastos: ticket ---------- */
+.ticket {
+  background: #eef0ea;
+  color: #1c2230;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  border-radius: 2px;
+  position: relative;
+}
+.ticket::before,
+.ticket::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 7px;
+  background-size: 12px 7px;
+  background-repeat: repeat-x;
+}
+.ticket::before {
+  top: 0;
+  background-image: radial-gradient(circle at 6px 0, var(--ticket-cut, var(--l-panel)) 5px, transparent 5.5px);
+}
+.ticket::after {
+  bottom: 0;
+  background-image: radial-gradient(circle at 6px 7px, var(--ticket-cut, var(--l-panel)) 5px, transparent 5.5px);
+}
+.ticket-scan {
+  background: linear-gradient(to bottom, transparent, rgba(20, 184, 166, 0.35) 45%, var(--accent-hover) 50%, rgba(20, 184, 166, 0.35) 55%, transparent);
+}
+.ticket-hit {
+  transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+.ticket-hit[data-hit="true"] {
+  background: rgba(20, 184, 166, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(13, 148, 136, 0.55);
+}
+
+/* ---------- Indicador lateral de secciones ---------- */
+.indicator-dot {
+  border-color: var(--l-line-strong);
+  background: var(--l-bg);
+  transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.3s ease;
+}
+.indicator-stop > span:first-child {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+.section-indicator:hover .indicator-stop > span:first-child,
+.indicator-stop[data-state="current"] > span:first-child {
+  opacity: 1;
+}
+.indicator-stop[data-state="passed"] .indicator-dot {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.indicator-stop[data-state="current"] .indicator-dot {
+  border-color: var(--accent);
+  transform: scale(1.35);
+}
+
+/* ---------- Trazabilidad: etapas del traslado ---------- */
+.timeline-stop {
+  transition: opacity 0.35s ease;
+}
+.timeline-stop .timeline-dot {
+  border-color: var(--accent);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.timeline-stop[data-reached="true"] .timeline-dot {
+  background: var(--accent);
+}
+.timeline-stop[data-reached="false"] {
+  opacity: 0.38;
+}
+.timeline-stop[data-reached="false"] .timeline-dot {
+  border-color: var(--l-line-strong);
+  background: var(--l-bg);
+}
+.timeline-log {
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+.timeline-log[data-reached="false"] {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-in,
+  .hero-word,
+  .hero-fade { animation: none; }
+  .route-draw { animation: none; stroke-dashoffset: 0; }
+  .l-pulse { animation: none; opacity: 0; }
+  .l-btn .l-btn-arrow { transition: none; }
+}
+
+/* Scrollbar discreto para tablas y sidebar */
+.thin-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+}
+.thin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}

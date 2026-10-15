@@ -1,0 +1,565 @@
+// TRAZA — Esquema de base de datos
+// PostgreSQL (desarrollo vía Docker Compose, producción vía DATABASE_URL).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================
+// CUENTAS / ACCESO
+// ============================================================
+
+enum Rol {
+  ADMIN
+  EMPRESA
+  PROVEEDOR
+  TECNICO
+  CONDUCTOR
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nombre       String
+  apellido     String
+  rol          Rol
+  activo       Boolean  @default(true)
+  empresaId    String?
+  empresa      Empresa? @relation(fields: [empresaId], references: [id])
+  proveedorId  String?
+  proveedor    Proveedor? @relation(fields: [proveedorId], references: [id])
+  tecnicoId    String?
+  tecnico      Tecnico? @relation(fields: [tecnicoId], references: [id])
+  conductorId  String?
+  conductor    Conductor? @relation(fields: [conductorId], references: [id])
+  createdAt    DateTime @default(now())
+  auditLogs    AuditLog[]
+
+  @@index([empresaId])
+}
+
+// ============================================================
+// PLANES / SAAS
+// ============================================================
+
+enum NombrePlan {
+  FREE
+  PROFESIONAL
+  EMPRESA
+}
+
+model Plan {
+  id            String   @id @default(cuid())
+  nombre        NombrePlan @unique
+  precioMensual Int
+  limiteActivos Int
+  limiteUsuarios Int
+  features      String   // JSON-encoded string list de features habilitadas
+  suscripciones Suscripcion[]
+}
+
+enum EstadoSuscripcion {
+  ACTIVA
+  VENCIDA
+  CANCELADA
+  DEMO
+}
+
+model Suscripcion {
+  id                String   @id @default(cuid())
+  empresaId         String   @unique
+  empresa           Empresa  @relation(fields: [empresaId], references: [id])
+  planId            String
+  plan              Plan     @relation(fields: [planId], references: [id])
+  estado            EstadoSuscripcion @default(DEMO)
+  fechaInicio       DateTime @default(now())
+  fechaRenovacion   DateTime
+  pagos             Pago[]
+}
+
+enum EstadoPago {
+  APROBADO
+  PENDIENTE
+  RECHAZADO
+}
+
+model Pago {
+  id            String   @id @default(cuid())
+  suscripcionId String
+  suscripcion   Suscripcion @relation(fields: [suscripcionId], references: [id])
+  monto         Int
+  fecha         DateTime @default(now())
+  metodo        String   // "demo", "mercadopago", "stripe"
+  estado        EstadoPago @default(APROBADO)
+}
+
+// ============================================================
+// EMPRESA / UBICACIONES
+// ============================================================
+
+model Empresa {
+  id           String   @id @default(cuid())
+  nombre       String
+  cuit         String?
+  email        String?
+  telefono     String?
+  createdAt    DateTime @default(now())
+
+  users        User[]
+  ubicaciones  Ubicacion[]
+  proveedores  Proveedor[]
+  tecnicos     Tecnico[]
+  activos      Activo[]
+  vehiculos    Vehiculo[]
+  conductores  Conductor[]
+  traslados    Traslado[]
+  gastos       Gasto[]
+  impuestos    Impuesto[]
+  suscripcion  Suscripcion?
+  auditLogs    AuditLog[]
+}
+
+enum TipoUbicacion {
+  PLANTA
+  SUCURSAL
+  DEPOSITO
+  OFICINA
+  TALLER
+}
+
+model Ubicacion {
+  id         String   @id @default(cuid())
+  empresaId  String
+  empresa    Empresa  @relation(fields: [empresaId], references: [id])
+  nombre     String
+  tipo       TipoUbicacion
+  direccion  String?
+  activos    Activo[]
+}
+
+// ============================================================
+// PROVEEDORES / TECNICOS
+// ============================================================
+
+enum EstadoProveedor {
+  ACTIVO
+  INACTIVO
+}
+
+model Proveedor {
+  id           String   @id @default(cuid())
+  empresaId    String
+  empresa      Empresa  @relation(fields: [empresaId], references: [id])
+  nombre       String
+  cuit         String?
+  contacto     String?
+  telefono     String?
+  email        String?
+  servicio     String   // p.ej. "Matafuegos", "Equipos médicos", "Transporte"
+  estado       EstadoProveedor @default(ACTIVO)
+  observaciones String?
+
+  activos      Activo[]
+  mantenimientos Mantenimiento[]
+  gastos       Gasto[]
+  users        User[]
+  documentos   Documento[]
+}
+
+enum EstadoTecnico {
+  ACTIVO
+  INACTIVO
+}
+
+model Tecnico {
+  id         String   @id @default(cuid())
+  empresaId  String
+  empresa    Empresa  @relation(fields: [empresaId], references: [id])
+  nombre     String
+  apellido   String
+  matricula  String?
+  telefono   String?
+  email      String?
+  estado     EstadoTecnico @default(ACTIVO)
+
+  mantenimientos Mantenimiento[]
+  users      User[]
+}
+
+// ============================================================
+// ACTIVOS (modelo genérico reutilizable)
+// ============================================================
+
+enum TipoActivo {
+  MATAFUEGO
+  EQUIPO_MEDICO
+  EQUIPO_INFORMATICO
+  HERRAMIENTA
+  MAQUINARIA
+  ALARMA
+  EQUIPO_CONTRA_INCENDIO
+  EQUIPO_ELECTRICO
+  VEHICULO
+  OTRO
+}
+
+enum EstadoActivo {
+  VIGENTE
+  PROXIMO_A_VENCER
+  VENCIDO
+  EN_MANTENIMIENTO
+  FUERA_DE_SERVICIO
+  RETIRADO
+}
+
+enum Modalidad {
+  PROPIO
+  COMODATO
+}
+
+model Activo {
+  id                 String   @id @default(cuid())
+  codigo             String   @unique
+  tipo               TipoActivo
+  nombre             String
+  marca              String?
+  modelo             String?
+  numeroSerie        String?
+  estado             EstadoActivo @default(VIGENTE)
+
+  empresaId          String
+  empresa            Empresa  @relation(fields: [empresaId], references: [id])
+  ubicacionId        String?
+  ubicacion          Ubicacion? @relation(fields: [ubicacionId], references: [id])
+  proveedorId        String?
+  proveedor          Proveedor? @relation(fields: [proveedorId], references: [id])
+
+  modalidad          Modalidad @default(PROPIO)
+  fechaAlta          DateTime @default(now())
+  fechaAdquisicion   DateTime?
+  ultimaInspeccion   DateTime?
+  proximoVencimiento DateTime?
+
+  // Atributos específicos por tipo de activo, codificados en JSON.
+  // Matafuego: { tipoMatafuego, capacidadKg }
+  // EquipoMedico: { subtipo, responsable, proximaCalibracion }
+  atributos          String?  // JSON string
+
+  observaciones      String?
+  qrSlug             String   @unique
+
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  mantenimientos     Mantenimiento[]
+  documentos         Documento[]
+  comodato           Comodato?
+  gastos             Gasto[]
+  impuestos          Impuesto[]
+
+  @@index([empresaId])
+  @@index([tipo])
+  @@index([estado])
+}
+
+model Comodato {
+  id            String   @id @default(cuid())
+  activoId      String   @unique
+  activo        Activo   @relation(fields: [activoId], references: [id])
+  propietario   String
+  cliente       String
+  fechaInicio   DateTime
+  fechaFinal    DateTime?
+  estado        String   // "Vigente", "Finalizado", "Rescindido"
+  ubicacion     String?
+  observaciones String?
+}
+
+// ============================================================
+// MANTENIMIENTO
+// ============================================================
+
+enum TipoMantenimiento {
+  INSPECCION
+  MANTENIMIENTO
+  REPARACION
+  RECARGA
+  CALIBRACION
+  INSTALACION
+  RETIRO
+  OTRO
+}
+
+model Mantenimiento {
+  id            String   @id @default(cuid())
+  activoId      String
+  activo        Activo   @relation(fields: [activoId], references: [id])
+  fecha         DateTime @default(now())
+  proveedorId   String?
+  proveedor     Proveedor? @relation(fields: [proveedorId], references: [id])
+  tecnicoId     String?
+  tecnico       Tecnico? @relation(fields: [tecnicoId], references: [id])
+  tipo          TipoMantenimiento
+  resultado     String?
+  observaciones String?
+  proximaFecha  DateTime?
+  documentoUrl  String?
+
+  createdAt     DateTime @default(now())
+
+  @@index([activoId])
+}
+
+// ============================================================
+// DOCUMENTACIÓN (genérica)
+// ============================================================
+
+enum EntidadDocumento {
+  ACTIVO
+  VEHICULO
+  CONDUCTOR
+  PROVEEDOR
+  EMPRESA
+}
+
+enum EstadoDocumento {
+  VIGENTE
+  PROXIMO_A_VENCER
+  VENCIDO
+}
+
+model Documento {
+  id            String   @id @default(cuid())
+  entidadTipo   EntidadDocumento
+  entidadId     String
+  tipo          String   // "Seguro", "VTV", "Licencia", "Habilitación", etc.
+  numero        String?
+  fechaEmision  DateTime?
+  vencimiento   DateTime?
+  archivoUrl    String?
+  estado        EstadoDocumento @default(VIGENTE)
+
+  activoId      String?
+  activo        Activo?  @relation(fields: [activoId], references: [id])
+  vehiculoId    String?
+  vehiculo      Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  conductorId   String?
+  conductor     Conductor? @relation(fields: [conductorId], references: [id])
+  proveedorId   String?
+  proveedor     Proveedor? @relation(fields: [proveedorId], references: [id])
+
+  createdAt     DateTime @default(now())
+}
+
+// ============================================================
+// FLOTA / LOGÍSTICA
+// ============================================================
+
+enum EstadoVehiculo {
+  DISPONIBLE
+  EN_VIAJE
+  EN_MANTENIMIENTO
+  FUERA_DE_SERVICIO
+}
+
+model Vehiculo {
+  id              String   @id @default(cuid())
+  empresaId       String
+  empresa         Empresa  @relation(fields: [empresaId], references: [id])
+  patente         String   @unique
+  marca           String
+  modelo          String
+  anio            Int?
+  tipo            String   // "Camioneta", "Camión", "Furgón", "Auto", etc.
+  kilometraje     Int      @default(0)
+  estado          EstadoVehiculo @default(DISPONIBLE)
+  serviceProximo  DateTime?
+  vtvVencimiento  DateTime?
+  seguroVencimiento DateTime?
+
+  // Última ubicación conocida, cargada a mano (sin GPS instalado en la
+  // flota): alguien toca "Actualizar ubicación" desde el celular y se graba
+  // la posición real del dispositivo en ese momento. No es rastreo continuo.
+  ubicacionLat        Float?
+  ubicacionLng        Float?
+  ubicacionActualizada DateTime?
+
+  documentos      Documento[]
+  traslados       Traslado[]
+  cargas          CombustibleCarga[]
+  gastos          Gasto[]
+  impuestos       Impuesto[]
+
+  createdAt       DateTime @default(now())
+}
+
+enum EstadoConductor {
+  ACTIVO
+  INACTIVO
+}
+
+model Conductor {
+  id                 String   @id @default(cuid())
+  empresaId          String
+  empresa            Empresa  @relation(fields: [empresaId], references: [id])
+  nombre             String
+  apellido           String
+  documento          String?
+  licencia           String?
+  licenciaVencimiento DateTime?
+  telefono           String?
+  estado             EstadoConductor @default(ACTIVO)
+
+  documentos         Documento[]
+  traslados          Traslado[]
+  cargas             CombustibleCarga[]
+  users              User[]
+}
+
+enum EstadoTraslado {
+  PLANIFICADO
+  EN_CURSO
+  COMPLETADO
+  CANCELADO
+}
+
+model Traslado {
+  id            String   @id @default(cuid())
+  numero        String   @unique
+  empresaId     String
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
+  fecha         DateTime @default(now())
+  origen        String
+  destino       String
+  vehiculoId    String?
+  vehiculo      Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  conductorId   String?
+  conductor     Conductor? @relation(fields: [conductorId], references: [id])
+  cliente       String?
+  estado        EstadoTraslado @default(PLANIFICADO)
+  observaciones String?
+
+  gastos        Gasto[]
+
+  createdAt     DateTime @default(now())
+}
+
+model CombustibleCarga {
+  id           String   @id @default(cuid())
+  fecha        DateTime @default(now())
+  vehiculoId   String
+  vehiculo     Vehiculo @relation(fields: [vehiculoId], references: [id])
+  conductorId  String?
+  conductor    Conductor? @relation(fields: [conductorId], references: [id])
+  estacion     String?
+  litros       Float
+  precioLitro  Float
+  importe      Float
+  kilometraje  Int?
+  fotoTicket   String?  @db.Text
+
+  createdAt    DateTime @default(now())
+}
+
+// ============================================================
+// GASTOS
+// ============================================================
+
+enum CategoriaGasto {
+  COMBUSTIBLE
+  PEAJE
+  MANTENIMIENTO
+  REPARACION
+  ENVIO
+  SEGURO
+  OTROS
+}
+
+model Gasto {
+  id            String   @id @default(cuid())
+  empresaId     String
+  empresa       Empresa  @relation(fields: [empresaId], references: [id])
+  fecha         DateTime @default(now())
+  categoria     CategoriaGasto
+  importe       Float
+  proveedorId   String?
+  proveedor     Proveedor? @relation(fields: [proveedorId], references: [id])
+  activoId      String?
+  activo        Activo? @relation(fields: [activoId], references: [id])
+  vehiculoId    String?
+  vehiculo      Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  trasladoId    String?
+  traslado      Traslado? @relation(fields: [trasladoId], references: [id])
+  comprobanteUrl String?
+  observaciones String?
+
+  createdAt     DateTime @default(now())
+}
+
+// ============================================================
+// IMPUESTOS
+// ============================================================
+
+enum EstadoImpuesto {
+  PENDIENTE
+  PAGADO
+  VENCIDO
+}
+
+model Impuesto {
+  id             String   @id @default(cuid())
+  empresaId      String
+  empresa        Empresa  @relation(fields: [empresaId], references: [id])
+  nombre         String   // "Patente 2026", "Ingresos Brutos", "Monotributo", "Tasa municipal", etc.
+  vehiculoId     String?
+  vehiculo       Vehiculo? @relation(fields: [vehiculoId], references: [id])
+  activoId       String?
+  activo         Activo?  @relation(fields: [activoId], references: [id])
+  importe        Float
+  vencimiento    DateTime
+  fechaPago      DateTime?
+  estado         EstadoImpuesto @default(PENDIENTE)
+  comprobanteUrl String?
+  observaciones  String?
+
+  createdAt      DateTime @default(now())
+
+  @@index([empresaId])
+  @@index([estado])
+}
+
+// ============================================================
+// AUDITORÍA
+// ============================================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  empresaId String?
+  empresa   Empresa? @relation(fields: [empresaId], references: [id])
+  accion    String
+  entidad   String
+  entidadId String?
+  detalle   String?
+  fecha     DateTime @default(now())
+}
+
+// ============================================================
+// AUTOMATIZACIONES (n8n)
+// ============================================================
+
+model WebhookConfig {
+  id        String   @id @default(cuid())
+  empresaId String?
+  evento    String   // "ACTIVO_PROXIMO_A_VENCER", "ACTIVO_VENCIDO", etc.
+  url       String
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
