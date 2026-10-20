@@ -1,10 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import { fecha, fechaOpcional } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { logAudit } from "@/lib/audit";
 import { Modalidad } from "@prisma/client";
 
@@ -12,8 +14,8 @@ const schema = z.object({
   activoId: z.string().min(1, "Seleccioná un activo"),
   propietario: z.string().min(2, "Indicá el propietario"),
   cliente: z.string().min(2, "Indicá el cliente"),
-  fechaInicio: z.string().min(1, "La fecha de inicio es obligatoria"),
-  fechaFinal: z.string().optional(),
+  fechaInicio: fecha("La fecha de inicio es obligatoria"),
+  fechaFinal: fechaOpcional(),
   ubicacion: z.string().optional(),
   observaciones: z.string().optional(),
 });
@@ -58,6 +60,7 @@ export async function createComodato(_prev: ComodatoFormState, formData: FormDat
 
 export async function deleteComodato(activoId: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const activo = await prisma.activo.findUnique({ where: { id: activoId } });
   if (!activo) return;
   if (session.rol !== "ADMIN" && activo.empresaId !== session.empresaId) {

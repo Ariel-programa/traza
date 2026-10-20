@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { prisma } from "@/lib/prisma";
 import { empresaWhere } from "@/lib/scope";
 import { PageHeader } from "@/components/ui/page-header";
@@ -44,7 +45,7 @@ export default async function CombustiblePage() {
         <StatCard label="Litros cargados" value={`${totalLitros.toFixed(0)} L`} />
         <StatCard label="Costo promedio/L" value={formatCurrency(costoPromedio)} />
       </div>
-      <CombustibleTable data={cargas} />
+      <CombustibleTable data={cargas} puedeEliminar={puedeEliminar(session.rol)} />
     </div>
   );
 }

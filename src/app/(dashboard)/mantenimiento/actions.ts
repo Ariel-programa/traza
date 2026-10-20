@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { fecha, fechaOpcional } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -12,13 +13,13 @@ import { triggerWebhooks } from "@/lib/webhooks";
 
 const schema = z.object({
   activoId: z.string().min(1, "Seleccioná un activo"),
-  fecha: z.string().min(1, "La fecha es obligatoria"),
+  fecha: fecha("La fecha es obligatoria"),
   tipo: z.nativeEnum(TipoMantenimiento),
   proveedorId: z.string().optional(),
   tecnicoId: z.string().optional(),
   resultado: z.string().optional(),
   observaciones: z.string().optional(),
-  proximaFecha: z.string().optional(),
+  proximaFecha: fechaOpcional(),
 });
 
 export type MantenimientoFormState = { error?: string };

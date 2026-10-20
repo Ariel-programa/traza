@@ -9,7 +9,7 @@ import type { Comodato, Activo } from "@prisma/client";
 
 type Row = Comodato & { activo: Activo };
 
-export function ComodatosTable({ data }: { data: Row[] }) {
+export function ComodatosTable({ data, puedeEliminar }: { data: Row[]; puedeEliminar: boolean }) {
   const columns: Column<Row>[] = [
     {
       key: "activo",
@@ -25,7 +25,7 @@ export function ComodatosTable({ data }: { data: Row[] }) {
     {
       key: "acciones",
       header: "",
-      render: (c) => <DeleteButton action={deleteComodato.bind(null, c.activoId)} confirmMessage={`¿Finalizar el comodato de ${c.activo.codigo}?`} label="Finalizar" />,
+      render: (c) => (puedeEliminar ? <DeleteButton action={deleteComodato.bind(null, c.activoId)} confirmMessage={`¿Finalizar el comodato de ${c.activo.codigo}?`} label="Finalizar" /> : null),
     },
   ];
 

@@ -4,11 +4,12 @@ import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import type { Rol } from "@prisma/client";
+import { getJwtSecretKey } from "@/lib/env";
 
 const SESSION_COOKIE = "traza_session";
-const secretKey = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "traza-dev-secret-change-in-production"
-);
+// Costo de bcrypt: 12 rondas (~250ms) encarece la fuerza bruta offline si
+// alguna vez se filtra la tabla de usuarios.
+const BCRYPT_ROUNDS = 12;
 
 export type SessionPayload = {
   userId: string;
@@ -19,7 +20,7 @@ export type SessionPayload = {
 };
 
 export async function hashPassword(password: string) {
-  return bcrypt.hash(password, 10);
+  return bcrypt.hash(password, BCRYPT_ROUNDS);
 }
 
 export async function verifyPassword(password: string, hash: string) {
@@ -31,7 +32,7 @@ export async function createSessionToken(payload: SessionPayload) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(secretKey);
+    .sign(getJwtSecretKey());
 }
 
 export async function setSessionCookie(payload: SessionPayload) {
@@ -56,7 +57,7 @@ export const getSession = cache(async (): Promise<SessionPayload | null> => {
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secretKey);
+    const { payload } = await jwtVerify(token, getJwtSecretKey(), { algorithms: ["HS256"] });
     const session = payload as unknown as SessionPayload;
     // Revalidar contra la base: un usuario desactivado no debe poder seguir
     // usando una sesión ya emitida hasta que el JWT expire por su cuenta.

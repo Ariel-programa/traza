@@ -9,7 +9,7 @@ import type { CombustibleCarga, Vehiculo, Conductor } from "@prisma/client";
 
 type Row = CombustibleCarga & { vehiculo: Vehiculo; conductor: Conductor | null };
 
-export function CombustibleTable({ data }: { data: Row[] }) {
+export function CombustibleTable({ data, puedeEliminar }: { data: Row[]; puedeEliminar: boolean }) {
   const columns: Column<Row>[] = [
     { key: "fecha", header: "Fecha", render: (c) => formatDate(c.fecha), sortValue: (c) => c.fecha.toISOString() },
     { key: "vehiculo", header: "Vehículo", render: (c) => `${c.vehiculo.patente} · ${c.vehiculo.marca}` },
@@ -22,7 +22,7 @@ export function CombustibleTable({ data }: { data: Row[] }) {
     {
       key: "acciones",
       header: "",
-      render: (c) => <DeleteButton action={deleteCombustibleCarga.bind(null, c.id)} confirmMessage="¿Eliminar esta carga de combustible?" />,
+      render: (c) => (puedeEliminar ? <DeleteButton action={deleteCombustibleCarga.bind(null, c.id)} confirmMessage="¿Eliminar esta carga de combustible?" /> : null),
     },
   ];
 

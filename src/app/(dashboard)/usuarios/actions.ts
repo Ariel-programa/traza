@@ -8,14 +8,15 @@ import { requireSession } from "@/lib/auth";
 import { hashPassword } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
 import { verificarLimiteUsuarios } from "@/lib/plan-limits";
+import { passwordSchema, passwordContieneEmail } from "@/lib/password-policy";
 import { Rol } from "@prisma/client";
 
 const schema = z.object({
   empresaId: z.string().optional(),
-  nombre: z.string().min(1),
-  apellido: z.string().min(1),
-  email: z.string().email("Ingresá un email válido"),
-  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  nombre: z.string().trim().min(1).max(100),
+  apellido: z.string().trim().min(1).max(100),
+  email: z.string().trim().email("Ingresá un email válido").max(254),
+  password: passwordSchema,
   rol: z.nativeEnum(Rol),
 });
 
@@ -29,6 +30,9 @@ export async function createUsuario(_prev: UsuarioFormState, formData: FormData)
   const parsed = schema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
   const data = parsed.data;
+  if (passwordContieneEmail(data.password, data.email)) {
+    return { error: "La contraseña no puede contener tu nombre de usuario del email." };
+  }
 
   const empresaId = session.rol === "ADMIN" ? data.empresaId || null : session.empresaId;
   if (session.rol !== "ADMIN" && data.rol !== "TECNICO" && data.rol !== "CONDUCTOR" && data.rol !== "PROVEEDOR" && data.rol !== "EMPRESA") {

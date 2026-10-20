@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { formatDateTime } from "@/lib/format";
 
 const ACCION_LABEL: Record<string, string> = {
-  CREAR: "Creó", EDITAR: "Editó", ELIMINAR: "Eliminó", LOGIN: "Inició sesión",
+  CREAR: "Creó", EDITAR: "Editó", ELIMINAR: "Eliminó", LOGIN: "Inició sesión", LOGIN_FALLIDO: "Intento de login fallido",
   ACTIVAR: "Activó", DESACTIVAR: "Desactivó", CONTRATAR_PLAN: "Contrató plan",
 };
 

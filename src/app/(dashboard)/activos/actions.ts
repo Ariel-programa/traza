@@ -1,12 +1,15 @@
 "use server";
 
 import { z } from "zod";
+import { fechaOpcional, numeroOpcional } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { logAudit } from "@/lib/audit";
 import { verificarLimiteActivos } from "@/lib/plan-limits";
+import { generarQrSlug } from "@/lib/qr-slug";
 import { TipoActivo, Modalidad } from "@prisma/client";
 
 const PREFIX: Record<string, string> = {
@@ -46,13 +49,13 @@ const activoSchema = z.object({
   ubicacionId: z.string().optional(),
   proveedorId: z.string().optional(),
   modalidad: z.nativeEnum(Modalidad),
-  fechaAdquisicion: z.string().optional(),
-  ultimaInspeccion: z.string().optional(),
-  proximoVencimiento: z.string().optional(),
+  fechaAdquisicion: fechaOpcional(),
+  ultimaInspeccion: fechaOpcional(),
+  proximoVencimiento: fechaOpcional(),
   observaciones: z.string().optional(),
   // atributos específicos por tipo
   tipoMatafuego: z.string().optional(),
-  capacidadKg: z.string().optional(),
+  capacidadKg: numeroOpcional(),
   subtipoMedico: z.string().optional(),
   responsableMedico: z.string().optional(),
 });
@@ -125,7 +128,7 @@ export async function createActivo(_prev: ActivoFormState, formData: FormData): 
       proximoVencimiento: data.proximoVencimiento ? new Date(data.proximoVencimiento) : null,
       observaciones: data.observaciones || null,
       atributos: buildAtributos(data),
-      qrSlug: codigo.toLowerCase(),
+      qrSlug: generarQrSlug(codigo),
     },
   });
 
@@ -183,6 +186,7 @@ export async function updateActivo(
 
 export async function deleteActivo(id: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const existing = await prisma.activo.findUnique({
     where: { id },
     include: { _count: { select: { mantenimientos: true } }, comodato: true },

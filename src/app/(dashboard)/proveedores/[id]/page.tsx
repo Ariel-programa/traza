@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,7 +51,9 @@ export default async function ProveedorDetailPage({
             <Button asChild variant="secondary" size="sm">
               <Link href={`/proveedores/${id}/editar`}><Pencil className="h-3.5 w-3.5" /> Editar</Link>
             </Button>
-            <DeleteButton action={deleteProveedor.bind(null, id)} confirmMessage={`¿Eliminar al proveedor ${proveedor.nombre}?`} />
+            {puedeEliminar(session.rol) && (
+              <DeleteButton action={deleteProveedor.bind(null, id)} confirmMessage={`¿Eliminar al proveedor ${proveedor.nombre}?`} />
+            )}
           </>
         }
       />

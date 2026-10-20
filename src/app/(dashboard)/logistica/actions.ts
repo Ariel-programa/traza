@@ -1,17 +1,19 @@
 "use server";
 
 import { z } from "zod";
+import { fecha } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { logAudit } from "@/lib/audit";
 import { triggerWebhooks } from "@/lib/webhooks";
 import { EstadoTraslado } from "@prisma/client";
 
 const schema = z.object({
   empresaId: z.string().min(1),
-  fecha: z.string().min(1),
+  fecha: fecha(),
   origen: z.string().min(1, "Indicá el origen"),
   destino: z.string().min(1, "Indicá el destino"),
   vehiculoId: z.string().optional(),
@@ -108,6 +110,7 @@ export async function updateEstadoTraslado(id: string, estado: EstadoTraslado) {
 
 export async function deleteTraslado(id: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const existing = await prisma.traslado.findUnique({
     where: { id },
     include: { _count: { select: { gastos: true } } },

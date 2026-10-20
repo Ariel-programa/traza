@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { prisma } from "@/lib/prisma";
 import { empresaWhere } from "@/lib/scope";
 import { PageHeader } from "@/components/ui/page-header";
@@ -43,7 +44,7 @@ export default async function GastosPage() {
         <StatCard label="Gasto total" value={formatCurrency(total)} icon={<Wallet className="h-4 w-4" />} />
         <StatCard label="Categoría principal" value={categoriaTop ? categoriaGastoLabel(categoriaTop[0]) : "—"} hint={categoriaTop ? formatCurrency(categoriaTop[1]) : undefined} />
       </div>
-      <GastosTable data={gastos} />
+      <GastosTable data={gastos} puedeEliminar={puedeEliminar(session.rol)} />
     </div>
   );
 }

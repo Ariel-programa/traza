@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { prisma } from "@/lib/prisma";
 import { empresaWhere } from "@/lib/scope";
 import { PageHeader } from "@/components/ui/page-header";
@@ -46,7 +47,7 @@ export default async function ImpuestosPage() {
         />
         <StatCard label="Pendientes" value={pendientes.length} icon={<Clock className="h-4 w-4" />} />
       </div>
-      <ImpuestosTable data={impuestos} />
+      <ImpuestosTable data={impuestos} puedeEliminar={puedeEliminar(session.rol)} />
     </div>
   );
 }

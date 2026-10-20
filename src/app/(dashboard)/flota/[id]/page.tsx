@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,7 +55,9 @@ export default async function VehiculoDetailPage({ params }: { params: Promise<{
             <Button asChild variant="secondary" size="sm">
               <Link href={`/flota/${vehiculo.id}/editar`}><Pencil className="h-3.5 w-3.5" /> Editar</Link>
             </Button>
-            <DeleteButton action={deleteVehiculo.bind(null, vehiculo.id)} confirmMessage={`¿Eliminar el vehículo ${vehiculo.patente}?`} />
+            {puedeEliminar(session.rol) && (
+              <DeleteButton action={deleteVehiculo.bind(null, vehiculo.id)} confirmMessage={`¿Eliminar el vehículo ${vehiculo.patente}?`} />
+            )}
           </>
         }
       />

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { prisma } from "@/lib/prisma";
 import { empresaWhere } from "@/lib/scope";
 import { PageHeader } from "@/components/ui/page-header";
@@ -29,7 +30,7 @@ export default async function ComodatosPage() {
           </Button>
         }
       />
-      <ComodatosTable data={comodatos} />
+      <ComodatosTable data={comodatos} puedeEliminar={puedeEliminar(session.rol)} />
     </div>
   );
 }

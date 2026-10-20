@@ -28,7 +28,7 @@ const ENTIDAD_LABEL: Record<string, string> = {
   EMPRESA: "Empresa",
 };
 
-export function DocumentosTable({ data }: { data: DocumentoRow[] }) {
+export function DocumentosTable({ data, puedeEliminar }: { data: DocumentoRow[]; puedeEliminar: boolean }) {
   const columns: Column<DocumentoRow>[] = [
     { key: "tipo", header: "Documento", render: (d) => <span className="font-medium">{d.tipo}</span>, sortValue: (d) => d.tipo },
     { key: "entidadTipo", header: "Aplica a", render: (d) => ENTIDAD_LABEL[d.entidadTipo] ?? d.entidadTipo },
@@ -44,7 +44,7 @@ export function DocumentosTable({ data }: { data: DocumentoRow[] }) {
           <Button asChild size="sm" variant="secondary">
             <Link href={`/documentacion/${d.id}/editar`} aria-label={`Editar ${d.tipo}`}><Pencil className="h-3.5 w-3.5" /></Link>
           </Button>
-          <DeleteButton action={deleteDocumento.bind(null, d.id)} confirmMessage={`¿Eliminar el documento "${d.tipo}"?`} label="" />
+          {puedeEliminar && <DeleteButton action={deleteDocumento.bind(null, d.id)} confirmMessage={`¿Eliminar el documento "${d.tipo}"?`} label="" />}
         </div>
       ),
       className: "text-right",

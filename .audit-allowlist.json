@@ -1,0 +1,12 @@
+{
+  "$comment": "Excepciones puntuales de npm audit (ver scripts/audit-deps.mjs). Cada una con motivo y fecha de vencimiento; nunca desactivar el escaneo entero.",
+  "exceptions": [
+    {
+      "advisory": "GHSA-ggr8-5vv4-36mx",
+      "package": "deepmerge-ts (vía prisma > @prisma/config)",
+      "reason": "Solo lo usa el CLI de Prisma para leer prisma.config al generar/migrar; la app en runtime no lo carga ni le pasa datos de usuarios. El fix requiere Prisma 7 (major con cambios de API): va en un PR dedicado y testeado, no en caliente.",
+      "added": "2026-10-20",
+      "until": "2026-12-31"
+    }
+  ]
+}

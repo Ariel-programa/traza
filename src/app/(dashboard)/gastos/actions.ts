@@ -1,23 +1,25 @@
 "use server";
 
 import { z } from "zod";
+import { fecha, numero, urlOpcional } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { logAudit } from "@/lib/audit";
 import { CategoriaGasto } from "@prisma/client";
 
 const schema = z.object({
   empresaId: z.string().min(1),
-  fecha: z.string().min(1),
+  fecha: fecha(),
   categoria: z.nativeEnum(CategoriaGasto),
-  importe: z.string().min(1, "Indicá el importe"),
+  importe: numero("Indicá el importe"),
   proveedorId: z.string().optional(),
   activoId: z.string().optional(),
   vehiculoId: z.string().optional(),
   trasladoId: z.string().optional(),
-  comprobanteUrl: z.string().optional(),
+  comprobanteUrl: urlOpcional(),
   observaciones: z.string().optional(),
 });
 
@@ -76,6 +78,7 @@ export async function createGasto(_prev: GastoFormState, formData: FormData): Pr
 
 export async function deleteGasto(id: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const existing = await prisma.gasto.findUnique({ where: { id } });
   if (!existing) return;
   if (session.rol !== "ADMIN" && existing.empresaId !== session.empresaId) {

@@ -14,7 +14,7 @@ import type { Impuesto, Vehiculo, Activo } from "@prisma/client";
 
 type Row = Impuesto & { vehiculo: Vehiculo | null; activo: Activo | null };
 
-export function ImpuestosTable({ data }: { data: Row[] }) {
+export function ImpuestosTable({ data, puedeEliminar }: { data: Row[]; puedeEliminar: boolean }) {
   const columns: Column<Row>[] = [
     { key: "nombre", header: "Impuesto", render: (i) => <span className="font-medium">{i.nombre}</span>, sortValue: (i) => i.nombre },
     {
@@ -50,7 +50,7 @@ export function ImpuestosTable({ data }: { data: Row[] }) {
           <Button asChild size="sm" variant="secondary">
             <Link href={`/impuestos/${i.id}/editar`} aria-label={`Editar ${i.nombre}`}><Pencil className="h-3.5 w-3.5" /></Link>
           </Button>
-          <DeleteButton action={deleteImpuesto.bind(null, i.id)} confirmMessage={`¿Eliminar el impuesto ${i.nombre}?`} label="" />
+          {puedeEliminar && <DeleteButton action={deleteImpuesto.bind(null, i.id)} confirmMessage={`¿Eliminar el impuesto ${i.nombre}?`} label="" />}
         </div>
       ),
       className: "text-right",

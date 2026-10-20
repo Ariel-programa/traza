@@ -1,10 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import { fecha, fechaOpcional, numero, urlOpcional } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { logAudit } from "@/lib/audit";
 import { calcularEstadoImpuesto } from "@/lib/vencimientos";
 
@@ -13,10 +15,10 @@ const schema = z.object({
   nombre: z.string().min(2, "Indicá el nombre del impuesto"),
   vehiculoId: z.string().optional(),
   activoId: z.string().optional(),
-  importe: z.string().min(1, "Indicá el importe"),
-  vencimiento: z.string().min(1, "La fecha de vencimiento es obligatoria"),
-  fechaPago: z.string().optional(),
-  comprobanteUrl: z.string().optional(),
+  importe: numero("Indicá el importe"),
+  vencimiento: fecha("La fecha de vencimiento es obligatoria"),
+  fechaPago: fechaOpcional(),
+  comprobanteUrl: urlOpcional(),
   observaciones: z.string().optional(),
 });
 
@@ -130,6 +132,7 @@ export async function marcarImpuestoPagado(id: string) {
 
 export async function deleteImpuesto(id: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const existing = await prisma.impuesto.findUnique({ where: { id } });
   if (!existing) return;
   if (session.rol !== "ADMIN" && existing.empresaId !== session.empresaId) {

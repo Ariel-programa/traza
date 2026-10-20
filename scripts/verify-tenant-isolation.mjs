@@ -71,6 +71,27 @@ async function main() {
     await page.fill("#password", "demo1234");
     await Promise.all([page.waitForURL(`${BASE_URL}/dashboard`), page.click('button[type="submit"]')]);
 
+    // 0) Lectura: pedir por id los recursos de la empresa B -> 404, y que no
+    // aparezcan en los listados de la empresa A.
+    for (const [ruta, label] of [
+      [`/flota/${vehiculoB.id}`, "vehículo"],
+      [`/flota/${vehiculoB.id}/editar`, "edición de vehículo"],
+      [`/logistica/${trasladoB.id}`, "traslado"],
+    ]) {
+      const res = await page.goto(`${BASE_URL}${ruta}`);
+      ok(`ver ${label} de otra empresa por id responde 404`, res?.status() === 404);
+    }
+    await page.goto(`${BASE_URL}/flota`);
+    ok("el listado de flota no muestra vehículos de la empresa B", !(await page.content()).includes(vehiculoB.patente));
+    await page.goto(`${BASE_URL}/logistica`);
+    ok("el listado de logística no muestra traslados de la empresa B", !(await page.content()).includes(trasladoB.numero));
+
+    // Respuestas sin secretos: /usuarios serializa los usuarios hacia un
+    // componente cliente; ningún hash bcrypt debe viajar al navegador.
+    const resUsuarios = await page.goto(`${BASE_URL}/usuarios`);
+    const htmlUsuarios = await resUsuarios.text();
+    ok("/usuarios no envía hashes de contraseña al navegador", !/\$2[aby]\$\d\d\$/.test(htmlUsuarios) && !htmlUsuarios.includes("passwordHash"));
+
     // 1) Traslado: intentar "adoptar" el vehiculo de la empresa B y ponerlo EN_CURSO.
     await page.goto(`${BASE_URL}/logistica/nuevo`);
     await page.fill("#origen", "Depósito propio");

@@ -43,7 +43,8 @@ export function UsuarioForm({ empresas, isAdmin }: { empresas: { id: string; nom
         </div>
         <div>
           <Label htmlFor="password">Contraseña</Label>
-          <Input id="password" name="password" type="password" required minLength={6} />
+          <Input id="password" name="password" type="password" autoComplete="new-password" required minLength={10} maxLength={128} />
+          <p className="text-xs text-[var(--text-muted)] mt-1">Mínimo 10 caracteres. No uses contraseñas comunes.</p>
         </div>
         <div>
           <Label htmlFor="rol">Rol</Label>

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,7 +41,7 @@ export default async function TrasladoDetailPage({
       <PageHeader
         title={`Traslado ${traslado.numero}`}
         description={`${traslado.origen} → ${traslado.destino}`}
-        actions={<DeleteButton action={deleteTraslado.bind(null, id)} confirmMessage={`¿Eliminar el traslado ${traslado.numero}?`} />}
+        actions={puedeEliminar(session.rol) ? <DeleteButton action={deleteTraslado.bind(null, id)} confirmMessage={`¿Eliminar el traslado ${traslado.numero}?`} /> : undefined}
       />
 
       {error === "tiene-historial" && (

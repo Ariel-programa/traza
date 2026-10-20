@@ -1,0 +1,26 @@
+# Bot de actualizaciones: abre PRs semanales con parches de dependencias.
+# Los majors de paquetes core (next, react, prisma) quedan agrupados aparte
+# para revisarlos y testearlos en un PR dedicado, nunca en caliente.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      parches:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

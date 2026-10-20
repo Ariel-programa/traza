@@ -1,4 +1,5 @@
 import { PrismaClient, TipoActivo, Modalidad } from "@prisma/client";
+import { generarQrSlug } from "../src/lib/qr-slug";
 
 // Agrega 20 activos nuevos repartidos entre las 5 empresas demo del seed,
 // sin borrar nada existente (a diferencia de prisma/seed.ts). Pensado para
@@ -91,7 +92,7 @@ async function main() {
           fechaAdquisicion: addDays(HOY, -randInt(10, 200)),
           ultimaInspeccion: addDays(HOY, -randInt(5, 90)),
           proximoVencimiento: vencimiento,
-          qrSlug: codigo.toLowerCase(),
+          qrSlug: generarQrSlug(codigo),
         },
       });
       creados.push(activo);
