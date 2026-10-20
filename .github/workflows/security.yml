@@ -59,7 +59,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: npx tsc --noEmit
+      - name: Chequeo de tipos (genera antes los tipos de rutas de Next)
+        run: npx next typegen && npx tsc --noEmit
       - name: Tests de reglas de seguridad
         run: npm run test:security
       - run: npx prisma migrate deploy
