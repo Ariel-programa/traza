@@ -27,7 +27,7 @@ jobs:
       - name: Auditoría de dependencias (falla ante high/critical nuevas)
         run: npm run security:audit
       - name: Escaneo de secretos en todo el historial
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
