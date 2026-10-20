@@ -1,5 +1,6 @@
 import { PrismaClient, Rol, TipoUbicacion, EstadoProveedor, EstadoTecnico, TipoActivo, EstadoActivo, Modalidad, TipoMantenimiento, EntidadDocumento, EstadoDocumento, EstadoVehiculo, EstadoConductor, EstadoTraslado, CategoriaGasto, NombrePlan, EstadoSuscripcion, EstadoPago } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { generarQrSlug } from "../src/lib/qr-slug";
 
 const prisma = new PrismaClient();
 
@@ -265,7 +266,7 @@ async function main() {
         ultimaInspeccion,
         proximoVencimiento: vencimiento,
         atributos: JSON.stringify({ tipoMatafuego: pick(tiposMatafuego), capacidadKg: pick(capacidades) }),
-        qrSlug: codigo.toLowerCase(),
+        qrSlug: generarQrSlug(codigo),
       },
     });
     activosMatafuegos.push(activo);
@@ -306,7 +307,7 @@ async function main() {
           subtipo: pick(subtiposMedicos),
           responsable: "Jefatura de Enfermería",
         }),
-        qrSlug: codigo.toLowerCase(),
+        qrSlug: generarQrSlug(codigo),
       },
     });
     activosMedicos.push(activo);
@@ -354,7 +355,7 @@ async function main() {
         fechaAdquisicion: addDays(HOY, -randInt(100, 700)),
         ultimaInspeccion: addDays(HOY, -randInt(30, 200)),
         proximoVencimiento: vencimiento,
-        qrSlug: codigo.toLowerCase(),
+        qrSlug: generarQrSlug(codigo),
       },
     });
     activosOtros.push(activo);

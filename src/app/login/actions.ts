@@ -2,9 +2,16 @@
 
 import { prisma } from "@/lib/prisma";
 import { verifyPassword, setSessionCookie } from "@/lib/auth";
+import { getClientIp, loginBloqueado, registrarLoginFallido } from "@/lib/rate-limit";
+import { destinoSeguro } from "@/lib/safe-redirect";
 import { redirect } from "next/navigation";
 
 export type LoginState = { error?: string };
+
+// Hash bcrypt de una contraseña descartable: se compara contra él cuando el
+// email no existe, para que la respuesta tarde lo mismo y no permita
+// enumerar cuentas por tiempo de respuesta.
+const DUMMY_HASH = "$2b$12$D2XQTEXRMMp1BYml0sSBN.y6IFbPXPza1UBhXn.VhaecpGJZrd2sK";
 
 export async function loginAction(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -14,14 +21,19 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   if (!email || !password) {
     return { error: "Ingresá tu email y contraseña." };
   }
-
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user || !user.activo) {
+  if (email.length > 254 || password.length > 128) {
     return { error: "Credenciales inválidas." };
   }
 
-  const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) {
+  const ip = await getClientIp();
+  if (await loginBloqueado(email, ip)) {
+    return { error: "Demasiados intentos fallidos. Esperá 15 minutos y volvé a intentar." };
+  }
+
+  const user = await prisma.user.findUnique({ where: { email }, omit: { passwordHash: false } });
+  const valid = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+  if (!user || !user.activo || !valid) {
+    await registrarLoginFallido(email, ip, user?.id);
     return { error: "Credenciales inválidas." };
   }
 
@@ -43,5 +55,5 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
     },
   });
 
-  redirect(next.startsWith("/") ? next : "/dashboard");
+  redirect(destinoSeguro(next));
 }

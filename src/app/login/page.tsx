@@ -1,5 +1,6 @@
 import { Logo } from "@/components/brand/logo";
 import { LoginForm } from "./login-form";
+import { destinoSeguro } from "@/lib/safe-redirect";
 import { Route, Wrench, QrCode, Truck } from "lucide-react";
 
 export default async function LoginPage({
@@ -42,7 +43,7 @@ export default async function LoginPage({
           <p className="text-sm text-[var(--text-secondary)] mt-1 mb-6">
             Accedé con tu cuenta para gestionar tus activos y operaciones.
           </p>
-          <LoginForm next={next ?? "/dashboard"} />
+          <LoginForm next={destinoSeguro(next ?? "/dashboard")} />
 
           <div className="mt-8 rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface-muted)] p-4">
             <p className="text-xs font-medium text-[var(--text-secondary)] mb-2">

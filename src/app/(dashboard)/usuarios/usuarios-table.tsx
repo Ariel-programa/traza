@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toggleUsuarioActivo } from "./actions";
 import type { User, Empresa } from "@prisma/client";
 
-type Row = User & { empresa: Empresa | null };
+type Row = Omit<User, "passwordHash"> & { empresa: Empresa | null };
 
 const ROL_LABEL: Record<string, string> = {
   ADMIN: "Administrador", EMPRESA: "Empresa", PROVEEDOR: "Proveedor", TECNICO: "Técnico", CONDUCTOR: "Conductor",

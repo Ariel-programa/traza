@@ -1,10 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import { fechaOpcional } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { logAudit } from "@/lib/audit";
 import { EntidadDocumento } from "@prisma/client";
 import { calcularEstadoVencimiento } from "@/lib/vencimientos";
@@ -14,8 +16,8 @@ const schema = z.object({
   entidadId: z.string().min(1, "Seleccioná a qué aplica el documento"),
   tipo: z.string().min(2, "Indicá el tipo de documento"),
   numero: z.string().optional(),
-  fechaEmision: z.string().optional(),
-  vencimiento: z.string().optional(),
+  fechaEmision: fechaOpcional(),
+  vencimiento: fechaOpcional(),
   archivoUrl: z.string().optional(),
 });
 
@@ -131,6 +133,7 @@ export async function updateDocumento(id: string, _prev: DocumentoFormState, for
 
 export async function deleteDocumento(id: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const documento = await prisma.documento.findUnique({ where: { id } });
   if (!documento) return;
   const permitido = await assertEntidadPermitida(documento.entidadTipo, documento.entidadId, session.empresaId, session.rol === "ADMIN");

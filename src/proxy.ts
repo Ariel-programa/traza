@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { getJwtSecretKey } from "@/lib/env";
 
-const secretKey = new TextEncoder().encode(
-  process.env.JWT_SECRET ?? "traza-dev-secret-change-in-production"
-);
-
+// Default cerrado: todo exige sesión salvo esta lista explícita. Cada entrada
+// pública debe justificar por qué no expone datos privados.
 const PUBLIC_PATHS = [
   "/login",
-  "/public",
-  "/api/qr",
-  "/api/webhooks",
-  "/api/cron",
+  "/public", // ficha del QR: solo estado del activo, slug no adivinable (src/lib/qr-slug.ts)
+  "/api/qr", // imagen PNG del QR, no consulta la base
+  "/api/cron", // protegido por CRON_SECRET dentro del handler
+  "/api/csp-report", // reportes CSP del navegador: solo loguea, no toca la base
   "/icon",
   "/apple-icon",
   "/favicon.ico",
@@ -27,6 +26,16 @@ function isPublic(pathname: string) {
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Forzar HTTPS en self-hosting detrás de un proxy/balanceador que termina
+  // TLS y envía x-forwarded-proto (Vercel ya redirige solo). Es opt-in con
+  // FORCE_HTTPS=true porque `next start` sin proxy marca todo como "http".
+  if (process.env.FORCE_HTTPS === "true" && req.headers.get("x-forwarded-proto") === "http") {
+    const httpsUrl = req.nextUrl.clone();
+    httpsUrl.protocol = "https:";
+    httpsUrl.port = "";
+    return NextResponse.redirect(httpsUrl, 308);
+  }
+
   if (isPublic(pathname)) {
     return NextResponse.next();
   }
@@ -39,7 +48,7 @@ export async function proxy(req: NextRequest) {
   }
 
   try {
-    await jwtVerify(token, secretKey);
+    await jwtVerify(token, getJwtSecretKey(), { algorithms: ["HS256"] });
     return NextResponse.next();
   } catch {
     const loginUrl = new URL("/login", req.url);

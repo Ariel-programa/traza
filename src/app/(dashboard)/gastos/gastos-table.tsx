@@ -8,7 +8,7 @@ import type { Gasto, Proveedor, Activo, Vehiculo, Traslado } from "@prisma/clien
 
 type Row = Gasto & { proveedor: Proveedor | null; activo: Activo | null; vehiculo: Vehiculo | null; traslado: Traslado | null };
 
-export function GastosTable({ data }: { data: Row[] }) {
+export function GastosTable({ data, puedeEliminar }: { data: Row[]; puedeEliminar: boolean }) {
   const columns: Column<Row>[] = [
     { key: "fecha", header: "Fecha", render: (g) => formatDate(g.fecha), sortValue: (g) => g.fecha.toISOString(), csvValue: (g) => formatDate(g.fecha) },
     { key: "categoria", header: "Categoría", render: (g) => categoriaGastoLabel(g.categoria), csvValue: (g) => categoriaGastoLabel(g.categoria) },
@@ -17,7 +17,7 @@ export function GastosTable({ data }: { data: Row[] }) {
     {
       key: "acciones",
       header: "",
-      render: (g) => <DeleteButton action={deleteGasto.bind(null, g.id)} confirmMessage="¿Eliminar este gasto?" />,
+      render: (g) => (puedeEliminar ? <DeleteButton action={deleteGasto.bind(null, g.id)} confirmMessage="¿Eliminar este gasto?" /> : null),
     },
   ];
 

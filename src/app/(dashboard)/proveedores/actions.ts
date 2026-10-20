@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { logAudit } from "@/lib/audit";
 import { EstadoProveedor } from "@prisma/client";
 
@@ -83,6 +84,7 @@ export async function updateProveedor(id: string, _prev: ProveedorFormState, for
 
 export async function deleteProveedor(id: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const existing = await prisma.proveedor.findUnique({
     where: { id },
     include: {

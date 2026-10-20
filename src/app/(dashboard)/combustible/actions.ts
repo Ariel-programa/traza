@@ -1,21 +1,23 @@
 "use server";
 
 import { z } from "zod";
+import { fecha, fotoOpcional, numero, numeroOpcional } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { logAudit } from "@/lib/audit";
 
 const schema = z.object({
   vehiculoId: z.string().min(1, "Seleccioná un vehículo"),
   conductorId: z.string().optional(),
-  fecha: z.string().min(1),
+  fecha: fecha(),
   estacion: z.string().optional(),
-  litros: z.string().min(1, "Indicá los litros cargados"),
-  precioLitro: z.string().min(1, "Indicá el precio por litro"),
-  kilometraje: z.string().optional(),
-  fotoTicket: z.string().optional(),
+  litros: numero("Indicá los litros cargados"),
+  precioLitro: numero("Indicá el precio por litro"),
+  kilometraje: numeroOpcional(),
+  fotoTicket: fotoOpcional(),
 });
 
 export type CombustibleFormState = { error?: string };
@@ -66,6 +68,7 @@ export async function createCombustibleCarga(_prev: CombustibleFormState, formDa
 
 export async function deleteCombustibleCarga(id: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const carga = await prisma.combustibleCarga.findUnique({ where: { id }, include: { vehiculo: true } });
   if (!carga) return;
   if (session.rol !== "ADMIN" && carga.vehiculo.empresaId !== session.empresaId) {

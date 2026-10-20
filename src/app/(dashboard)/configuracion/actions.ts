@@ -5,12 +5,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { validarUrlWebhook } from "@/lib/webhook-url";
 
 const empresaSchema = z.object({
-  nombre: z.string().min(2),
-  cuit: z.string().optional(),
-  email: z.string().optional(),
-  telefono: z.string().optional(),
+  nombre: z.string().trim().min(2).max(150),
+  cuit: z.string().trim().max(20).optional(),
+  email: z.union([z.literal(""), z.string().trim().email("Ingresá un email válido").max(254)]).optional(),
+  telefono: z.string().trim().max(40).optional(),
 });
 
 export type ConfigFormState = { error?: string; success?: string };
@@ -35,8 +36,8 @@ export async function updateEmpresa(_prev: ConfigFormState, formData: FormData):
 }
 
 const webhookSchema = z.object({
-  evento: z.string().min(1),
-  url: z.string().url("Ingresá una URL válida"),
+  evento: z.string().min(1).max(100),
+  url: z.string().trim().url("Ingresá una URL válida").max(2048),
 });
 
 export async function crearWebhook(_prev: ConfigFormState, formData: FormData): Promise<ConfigFormState> {
@@ -45,6 +46,8 @@ export async function crearWebhook(_prev: ConfigFormState, formData: FormData): 
 
   const parsed = webhookSchema.safeParse(Object.fromEntries(formData.entries()));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+  const errorUrl = validarUrlWebhook(parsed.data.url);
+  if (errorUrl) return { error: errorUrl };
 
   await prisma.webhookConfig.create({
     data: { empresaId: session.empresaId, evento: parsed.data.evento, url: parsed.data.url, activo: true },

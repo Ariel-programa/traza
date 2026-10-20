@@ -1,10 +1,12 @@
 "use server";
 
 import { z } from "zod";
+import { enteroOpcional, fechaOpcional, numeroOpcional } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { logAudit } from "@/lib/audit";
 import { EstadoVehiculo } from "@prisma/client";
 
@@ -13,13 +15,13 @@ const vehiculoSchema = z.object({
   patente: z.string().min(4, "Ingresá una patente válida"),
   marca: z.string().min(1),
   modelo: z.string().min(1),
-  anio: z.string().optional(),
+  anio: enteroOpcional(),
   tipo: z.string().min(1),
-  kilometraje: z.string().optional(),
+  kilometraje: numeroOpcional(),
   estado: z.nativeEnum(EstadoVehiculo),
-  serviceProximo: z.string().optional(),
-  vtvVencimiento: z.string().optional(),
-  seguroVencimiento: z.string().optional(),
+  serviceProximo: fechaOpcional(),
+  vtvVencimiento: fechaOpcional(),
+  seguroVencimiento: fechaOpcional(),
 });
 
 export type VehiculoFormState = { error?: string };
@@ -90,6 +92,7 @@ export async function updateVehiculo(id: string, _prev: VehiculoFormState, formD
 
 export async function deleteVehiculo(id: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const existing = await prisma.vehiculo.findUnique({
     where: { id },
     include: { _count: { select: { cargas: true } } },
@@ -142,7 +145,7 @@ const conductorSchema = z.object({
   apellido: z.string().min(1),
   documento: z.string().optional(),
   licencia: z.string().optional(),
-  licenciaVencimiento: z.string().optional(),
+  licenciaVencimiento: fechaOpcional(),
   telefono: z.string().optional(),
   estado: z.enum(["ACTIVO", "INACTIVO"]),
 });
@@ -208,6 +211,7 @@ export async function updateConductor(id: string, _prev: ConductorFormState, for
 
 export async function deleteConductor(id: string) {
   const session = await requireSession();
+  if (!puedeEliminar(session.rol)) throw new Error("No tenés permiso para eliminar registros.");
   const existing = await prisma.conductor.findUnique({
     where: { id },
     include: { _count: { select: { traslados: true, cargas: true, documentos: true, users: true } } },

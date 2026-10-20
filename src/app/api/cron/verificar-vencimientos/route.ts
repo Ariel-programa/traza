@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calcularEstadoVencimiento, calcularEstadoImpuesto } from "@/lib/vencimientos";
@@ -25,13 +26,25 @@ const ESTADO_DOC_MAP = {
 //
 // Protegido con CRON_SECRET (ver .env.example). Sin ese secreto configurado,
 // el endpoint queda deshabilitado por seguridad.
+// Comparación en tiempo constante (sobre hashes, para igualar longitudes):
+// un `!==` filtra por timing cuántos caracteres iniciales coinciden.
+function secretoValido(provided: string | null, secret: string) {
+  if (!provided) return false;
+  const a = createHash("sha256").update(provided).digest();
+  const b = createHash("sha256").update(secret).digest();
+  return timingSafeEqual(a, b);
+}
+
 export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
     return NextResponse.json({ error: "CRON_SECRET no configurado" }, { status: 501 });
   }
-  const provided = req.nextUrl.searchParams.get("secret") ?? req.headers.get("x-cron-secret");
-  if (provided !== secret) {
+  // Preferí el header x-cron-secret (o Authorization: Bearer, que es lo que
+  // envía Vercel Cron): el query param ?secret= queda en logs de proxies/CDN.
+  const bearer = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ?? null;
+  const provided = req.headers.get("x-cron-secret") ?? bearer ?? req.nextUrl.searchParams.get("secret");
+  if (!secretoValido(provided, secret)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

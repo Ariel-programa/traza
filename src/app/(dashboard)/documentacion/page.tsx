@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
+import { puedeEliminar } from "@/lib/permisos";
 import { prisma } from "@/lib/prisma";
 import { empresaWhere } from "@/lib/scope";
 import { PageHeader } from "@/components/ui/page-header";
@@ -60,7 +61,7 @@ export default async function DocumentacionPage() {
           </Button>
         }
       />
-      <DocumentosTable data={rows} />
+      <DocumentosTable data={rows} puedeEliminar={puedeEliminar(session.rol)} />
     </div>
   );
 }
